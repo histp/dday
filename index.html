@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>D-Day 카드 생성기</title>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eee;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;      
+      height: 100vh;
+      padding: 30px;
+    }
+
+    .app {
+      width: 380px;
+    }
+
+    .controls {
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      margin-bottom: 15px;
+    }
+
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      
+    }
+
+    button {
+      background: #4c6ef5;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    button.save {
+      background: #20c997;
+    }
+
+    /* 이미지 선택 */
+    .image-list {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      margin-bottom: 10px;
+    }
+
+    .image-list img {
+      width: 80px;
+      height: 60px;
+      object-fit: cover;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 2px solid transparent;
+    }
+
+    .image-list img.selected {
+      border-color: #4c6ef5;
+    }
+
+    /* 카드 */
+    .card {
+      border-radius: 20px;
+      color: white;
+      padding: 20px;
+      box-sizing: border-box;
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .square { width: 360px; height: 360px; }
+    .feed { width: 360px; height: 450px; }
+    .story { width: 360px; height: 640px; }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .dday {
+      font-size: 40px;
+      font-weight: bold;
+      text-align: right;
+    }
+
+    #title, #date{
+        width: 240px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app">
+
+  <div class="controls">
+    <input id="title" placeholder="디데이 이름">
+    <input id="date" type="date">
+
+    <select id="category">
+      <option value="">카테고리 선택</option>
+      <option value="study">📚 공부</option>
+      <option value="birthday">🎂 생일</option>
+      <option value="travel">✈️ 여행</option>
+      <option value="faith">✝️ 신앙</option>
+    </select>
+
+    <div id="imageList" class="image-list"></div>
+
+    <select id="size">
+      <option value="">사이즈 선택</option>
+      <option value="square">⬜ 정사각형</option>
+      <option value="feed">📸 인스타 피드</option>
+      <option value="story">📱 인스타 스토리</option>
+    </select>
+    <input type="color" id="textColor" value="#ffffff">
+
+    <button onclick="makeCard()">카드 만들기</button>
+    <button class="save" onclick="saveImage()">PNG로 저장 (공유)</button>
+  </div>
+
+  <div id="card" class="card square">
+    <div class="title">D-Day</div>
+    <div class="dday">D-0</div>
+  </div>
+
+</div>
+
+<script>
+  const imagesByCategory = {
+    study: ["images/study/study1.jpg", "images/study/study2.jpg"],
+    birthday: ["images/birthday/birthday1.jpg"],
+    travel: ["images/travel/travel1.jpg"],
+    faith: ["images/faith/faith1.jpg"]
+  };
+
+  let selectedImage = "";
+  let selectedSize = "";
+  let selectedTextColor = "#ffffff";
+
+
+  document.getElementById("category").addEventListener("change", e => {
+    const category = e.target.value;
+    const list = document.getElementById("imageList");
+    list.innerHTML = "";
+    selectedImage = "";
+
+    if (!imagesByCategory[category]) return;
+
+    imagesByCategory[category].forEach(src => {
+      const img = document.createElement("img");
+      img.src = src;
+
+      img.onclick = () => {
+        document.querySelectorAll(".image-list img")
+          .forEach(i => i.classList.remove("selected"));
+        img.classList.add("selected");
+        selectedImage = src;
+      };
+
+      list.appendChild(img);
+    });
+  });
+
+  document.getElementById("size").addEventListener("change", e => {
+    selectedSize = e.target.value;
+  });
+
+    document.getElementById("textColor").addEventListener("change", e => {
+        selectedTextColor = e.target.value;
+    });
+
+
+  function makeCard() {
+    const title = document.getElementById("title").value;
+    const dateValue = document.getElementById("date").value;
+    const card = document.getElementById("card");
+
+    if (!title || !dateValue || !selectedImage || !selectedSize) {
+      alert("모든 항목을 선택해줘!");
+      return;
+    }
+
+    const today = new Date();
+    const target = new Date(dateValue);
+    today.setHours(0,0,0,0);
+    target.setHours(0,0,0,0);
+
+    const diff = Math.floor((target - today) / (1000 * 60 * 60 * 24));
+    let ddayText = diff > 0 ? `D-${diff}` : diff === 0 ? "D-Day" : `D+${Math.abs(diff)}`;
+
+    card.className = `card ${selectedSize}`;
+    card.style.backgroundImage = `url(${selectedImage})`;
+    card.style.color = selectedTextColor;
+    card.querySelector(".title").textContent = title;
+    card.querySelector(".dday").textContent = ddayText;
+  }
+
+  function saveImage() {
+    html2canvas(document.getElementById("card"), { useCORS: true })
+      .then(canvas => {
+        const link = document.createElement("a");
+        link.download = "dday-card.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+      });
+  }
+</script>
+
+</body>
+</html>
